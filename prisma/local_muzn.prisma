@@ -1,0 +1,863 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model attachments {
+  id             String    @id
+  file_name      String
+  file_url       String
+  file_type      String
+  file_size      Int
+  uploaded_at    DateTime  @default(now()) @db.Timestamptz(6)
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime  @db.Timestamptz(6)
+  uploaded_by_id String
+  message_id     String?
+  messages       messages? @relation(fields: [message_id], references: [id])
+  users          users     @relation(fields: [uploaded_by_id], references: [id])
+
+  @@index([uploaded_by_id])
+}
+
+model attendance_logs {
+  id         String            @id
+  joined_at  DateTime?         @db.Timestamptz(6)
+  left_at    DateTime?         @db.Timestamptz(6)
+  log_source attendance_source
+  created_at DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at DateTime          @db.Timestamptz(6)
+  session_id String
+  teacher_id String?
+  student_id String?
+  sessions   sessions          @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  students   students?         @relation(fields: [student_id], references: [id])
+  teachers   teachers?         @relation(fields: [teacher_id], references: [id])
+
+  @@index([session_id])
+}
+
+model audit_logs {
+  id         String       @id
+  action     audit_action
+  model_name String
+  record_id  String
+  changes    Json?
+  created_at DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at DateTime     @db.Timestamptz(6)
+  actor_id   String
+  users      users        @relation(fields: [actor_id], references: [id])
+
+  @@index([actor_id])
+  @@index([model_name, record_id])
+}
+
+model cancellations {
+  id                      String             @id
+  cancelled_by_role       cancellation_actor
+  cancelled_at            DateTime           @default(now()) @db.Timestamptz(6)
+  created_at              DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime           @db.Timestamptz(6)
+  hours_before_start      Int?
+  eligible_for_makeup     Boolean            @default(false)
+  reason                  String?
+  session_id              String             @unique
+  cancelled_by_teacher_id String?
+  cancelled_by_student_id String?
+  cancelled_by_parent_id  String?
+  parents                 parents?           @relation(fields: [cancelled_by_parent_id], references: [id])
+  students                students?          @relation(fields: [cancelled_by_student_id], references: [id])
+  teachers                teachers?          @relation(fields: [cancelled_by_teacher_id], references: [id])
+  sessions                sessions           @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  dispatch_requests       dispatch_requests?
+}
+
+model conversation_participants {
+  id              String        @id
+  joined_at       DateTime      @default(now()) @db.Timestamptz(6)
+  created_at      DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime      @db.Timestamptz(6)
+  conversation_id String
+  user_id         String
+  conversations   conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  users           users         @relation(fields: [user_id], references: [id])
+
+  @@unique([conversation_id, user_id])
+}
+
+model conversations {
+  id                        String                      @id
+  created_at                DateTime                    @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime                    @db.Timestamptz(6)
+  conversation_participants conversation_participants[]
+  messages                  messages[]
+}
+
+model credential_invites {
+  id         String    @id
+  token      String    @unique
+  expires_at DateTime  @db.Timestamptz(6)
+  used_at    DateTime? @db.Timestamptz(6)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  user_id    String    @unique
+  updated_at DateTime  @db.Timestamptz(6)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model dispatch_requests {
+  id                        String               @id
+  dispatched_at             DateTime             @default(now()) @db.Timestamptz(6)
+  created_at                DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime             @db.Timestamptz(6)
+  status                    dispatch_status      @default(pending)
+  proposed_start_time_utc   DateTime?            @db.Timestamptz(6)
+  proposed_duration_minutes Int?                 @default(30)
+  accepted_at               DateTime?            @db.Timestamptz(6)
+  expires_at                DateTime?            @db.Timestamptz(6)
+  session_id                String               @unique
+  cancellation_id           String?              @unique
+  accepted_by_id            String?
+  teachers                  teachers?            @relation(fields: [accepted_by_id], references: [id])
+  cancellations             cancellations?       @relation(fields: [cancellation_id], references: [id])
+  sessions                  sessions             @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  dispatch_responses        dispatch_responses[]
+}
+
+model dispatch_responses {
+  id                String                   @id
+  response          dispatch_response_option @default(no_response)
+  responded_at      DateTime                 @default(now()) @db.Timestamptz(6)
+  created_at        DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime                 @db.Timestamptz(6)
+  dispatch_id       String
+  teacher_id        String
+  dispatch_requests dispatch_requests        @relation(fields: [dispatch_id], references: [id], onDelete: Cascade)
+  teachers          teachers                 @relation(fields: [teacher_id], references: [id])
+
+  @@unique([dispatch_id, teacher_id])
+}
+
+model gamification_points {
+  id          String     @id
+  badge_type  badge_type
+  points      Int        @default(0)
+  description String?
+  earned_at   DateTime   @default(now()) @db.Timestamptz(6)
+  created_at  DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime   @db.Timestamptz(6)
+  student_id  String
+  students    students   @relation(fields: [student_id], references: [id], onDelete: Cascade)
+
+  @@index([student_id])
+}
+
+model invoices {
+  id              String         @id
+  amount          Decimal        @db.Decimal(10, 2)
+  currency        String         @default("USD")
+  usd_equivalent  Decimal?       @db.Decimal(10, 2)
+  due_date        DateTime       @db.Timestamptz(6)
+  grace_until     DateTime?      @db.Timestamptz(6)
+  status          invoice_status @default(pending)
+  issued_at       DateTime       @default(now()) @db.Timestamptz(6)
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @db.Timestamptz(6)
+  paid_at         DateTime?      @db.Timestamptz(6)
+  subscription_id String?
+  subscriptions   subscriptions? @relation(fields: [subscription_id], references: [id])
+  payments        payments[]
+
+  @@index([due_date, status])
+}
+
+model messages {
+  id              String        @id
+  content         String
+  is_read         Boolean       @default(false)
+  created_at      DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime      @db.Timestamptz(6)
+  conversation_id String
+  sender_id       String
+  attachments     attachments[]
+  conversations   conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  users           users         @relation(fields: [sender_id], references: [id])
+
+  @@index([conversation_id, created_at])
+}
+
+model notifications {
+  id           String               @id
+  channel      notification_channel
+  type         notification_type
+  content      String
+  is_sent      Boolean              @default(false)
+  is_read      Boolean              @default(false)
+  scheduled_at DateTime?            @db.Timestamptz(6)
+  sent_at      DateTime?            @db.Timestamptz(6)
+  created_at   DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime             @db.Timestamptz(6)
+  recipient_id String
+  users        users                @relation(fields: [recipient_id], references: [id], onDelete: Cascade)
+
+  @@index([recipient_id, is_read])
+  @@index([scheduled_at, is_sent])
+}
+
+model parents {
+  id              String            @id
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime          @db.Timestamptz(6)
+  deleted_at      DateTime?         @db.Timestamptz(6)
+  user_id         String            @unique
+  is_active       Boolean           @default(false)
+  cancellations   cancellations[]
+  users           users             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  payments        payments[]
+  students        students[]
+  teacher_ratings teacher_ratings[]
+}
+
+model payments {
+  id               String          @id
+  amount           Decimal         @db.Decimal(10, 2)
+  currency         String          @default("USD")
+  gateway          payment_gateway
+  gateway_txn_id   String?         @unique
+  status           payment_status  @default(pending)
+  paid_at          DateTime?       @db.Timestamptz(6)
+  created_at       DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime        @db.Timestamptz(6)
+  invoice_id       String
+  payer_student_id String?
+  payer_parent_id  String?
+  invoices         invoices        @relation(fields: [invoice_id], references: [id])
+  parents          parents?        @relation(fields: [payer_parent_id], references: [id])
+  students         students?       @relation(fields: [payer_student_id], references: [id])
+}
+
+model permissions {
+  operation_name         String                   @id
+  action                 permission_action
+  created_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime                 @db.Timestamptz(6)
+  resource_id            String
+  resources              resources                @relation(fields: [resource_id], references: [model_name], onDelete: Cascade)
+  roles_permissions_junc roles_permissions_junc[]
+  users_permissions_junc users_permissions_junc[]
+}
+
+model pricings {
+  id                String   @id
+  currency          String
+  country           String   @unique
+  rate_per_hour     Decimal  @db.Decimal(10, 2)
+  teacher_cut       Decimal  @db.Decimal(10, 2)
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime @db.Timestamptz(6)
+  is_active         Boolean  @default(true)
+  teacher_cut_ratio Decimal  @db.Decimal(5, 2)
+}
+
+model promo_codes {
+  id              String          @id
+  code            String          @unique
+  discount_pct    Decimal?        @db.Decimal(5, 2)
+  discount_amount Decimal?        @db.Decimal(10, 2)
+  currency        String?         @default("USD")
+  max_uses        Int?
+  times_used      Int             @default(0)
+  valid_from      DateTime        @db.Timestamptz(6)
+  valid_until     DateTime?       @db.Timestamptz(6)
+  is_active       Boolean         @default(true)
+  created_at      DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime        @db.Timestamptz(6)
+  subscriptions   subscriptions[]
+}
+
+model quran_progresses {
+  id            String   @id
+  current_juz   Int
+  current_surah String
+  current_ayah  Int
+  last_reviewed DateTime @db.Timestamptz(6)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @db.Timestamptz(6)
+  student_id    String   @unique
+  students      students @relation(fields: [student_id], references: [id], onDelete: Cascade)
+}
+
+model recurring_schedule_slots {
+  id                    String              @id
+  day_of_week           day_of_week
+  time_utc              DateTime            @db.Timetz(6)
+  duration_minutes      Int                 @default(30)
+  created_at            DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime            @db.Timestamptz(6)
+  recurring_schedule_id String
+  recurring_schedules   recurring_schedules @relation(fields: [recurring_schedule_id], references: [id], onDelete: Cascade)
+}
+
+model recurring_schedule_subjects {
+  id                    String              @id
+  created_at            DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime            @db.Timestamptz(6)
+  recurring_schedule_id String
+  subject_id            String
+  recurring_schedules   recurring_schedules @relation(fields: [recurring_schedule_id], references: [id], onDelete: Cascade)
+  subjects              subjects            @relation(fields: [subject_id], references: [id], onDelete: Cascade)
+
+  @@unique([recurring_schedule_id, subject_id])
+}
+
+model recurring_schedules {
+  id                          String                        @id
+  start_date                  DateTime                      @db.Timestamptz(6)
+  end_date                    DateTime?                     @db.Timestamptz(6)
+  is_active                   Boolean                       @default(true)
+  created_at                  DateTime                      @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime                      @db.Timestamptz(6)
+  student_id                  String
+  teacher_id                  String
+  last_generated_at           DateTime?                     @db.Timestamptz(6)
+  teacher_cut                 Decimal?                      @db.Decimal(10, 2)
+  recurring_schedule_slots    recurring_schedule_slots[]
+  recurring_schedule_subjects recurring_schedule_subjects[]
+  students                    students                      @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  teachers                    teachers                      @relation(fields: [teacher_id], references: [id])
+  sessions                    sessions[]
+}
+
+model resources {
+  model_name  String        @id
+  name_en     String?
+  name_ar     String?
+  created_at  DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime      @db.Timestamptz(6)
+  permissions permissions[]
+}
+
+model roles {
+  id                     String                   @id
+  name_ar                String                   @unique
+  name_en                String                   @unique
+  description            String
+  is_active              Boolean                  @default(true)
+  created_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime                 @db.Timestamptz(6)
+  roles_permissions_junc roles_permissions_junc[]
+  users                  users[]                  @relation("user_to_role_relation")
+}
+
+model roles_permissions_junc {
+  role_id        String
+  operation_name String
+  condition      permission_condition
+  created_at     DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime             @db.Timestamptz(6)
+  permissions    permissions          @relation(fields: [operation_name], references: [operation_name], onDelete: Cascade)
+  roles          roles                @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  @@id([role_id, operation_name])
+}
+
+model session_reports {
+  id              String          @id
+  recitation_type recitation_type
+  from_surah      String?
+  from_ayah       Int?
+  to_surah        String?
+  to_ayah         Int?
+  rating          Int             @db.SmallInt
+  parent_notes    String?
+  teacher_notes   String?
+  submitted_at    DateTime        @default(now()) @db.Timestamptz(6)
+  created_at      DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime        @db.Timestamptz(6)
+  session_id      String          @unique
+  teacher_id      String
+  sessions        sessions        @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  teachers        teachers        @relation(fields: [teacher_id], references: [id])
+}
+
+model session_subjects {
+  id         String   @id
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @db.Timestamptz(6)
+  session_id String
+  subject_id String
+  sessions   sessions @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  subjects   subjects @relation(fields: [subject_id], references: [id], onDelete: Cascade)
+
+  @@unique([session_id, subject_id])
+}
+
+model sessions {
+  id                                                String                @id
+  scheduled_at_utc                                  DateTime              @db.Timestamptz(6)
+  duration_minutes                                  Int                   @default(30)
+  status                                            session_status        @default(scheduled)
+  meeting_url                                       String?
+  platform                                          meeting_platform      @default(zoom)
+  meeting_id                                        String?
+  actual_start                                      DateTime?             @db.Timestamptz(6)
+  actual_end                                        DateTime?             @db.Timestamptz(6)
+  is_makeup                                         Boolean               @default(false)
+  created_at                                        DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at                                        DateTime              @db.Timestamptz(6)
+  student_id                                        String
+  teacher_id                                        String
+  substitute_teacher_id                             String?
+  recurring_schedule_id                             String?
+  original_session_id                               String?
+  attendance_logs                                   attendance_logs[]
+  cancellations                                     cancellations?
+  dispatch_requests                                 dispatch_requests?
+  session_reports                                   session_reports?
+  session_subjects                                  session_subjects[]
+  sessions                                          sessions?             @relation("sessionsTosessions", fields: [original_session_id], references: [id])
+  other_sessions                                    sessions[]            @relation("sessionsTosessions")
+  recurring_schedules                               recurring_schedules?  @relation(fields: [recurring_schedule_id], references: [id])
+  students                                          students              @relation(fields: [student_id], references: [id])
+  teachers_sessions_substitute_teacher_idToteachers teachers?             @relation("sessions_substitute_teacher_idToteachers", fields: [substitute_teacher_id], references: [id])
+  teachers_sessions_teacher_idToteachers            teachers              @relation("sessions_teacher_idToteachers", fields: [teacher_id], references: [id])
+  student_assessments                               student_assessments[]
+  teacher_ratings                                   teacher_ratings?
+
+  @@index([scheduled_at_utc])
+  @@index([student_id, scheduled_at_utc])
+  @@index([teacher_id, scheduled_at_utc])
+}
+
+model student_assessments {
+  id                String          @id
+  overall_level     overall_level
+  reading_skill     reading_skill
+  letters_skill     letters_skill
+  tajweed_skill     tajweed_skill
+  attention_level   attention_level
+  memorized_content String?
+  medical_notes     String?
+  assessment_date   DateTime        @default(now()) @db.Timestamptz(6)
+  created_at        DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime        @db.Timestamptz(6)
+  teacher_id        String
+  student_id        String
+  subject_id        String
+  session_id        String?
+  sessions          sessions?       @relation(fields: [session_id], references: [id])
+  students          students        @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  subjects          subjects        @relation(fields: [subject_id], references: [id])
+  teachers          teachers        @relation(fields: [teacher_id], references: [id])
+}
+
+model student_availabilities {
+  id             String      @id
+  day_of_week    day_of_week
+  start_time_utc DateTime    @db.Timetz(6)
+  end_time_utc   DateTime    @db.Timetz(6)
+  created_at     DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime    @db.Timestamptz(6)
+  student_id     String
+  students       students    @relation(fields: [student_id], references: [id], onDelete: Cascade)
+}
+
+model student_subjects {
+  status      enrollment_status @default(active)
+  enrolled_at DateTime          @default(now()) @db.Timestamptz(6)
+  created_at  DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime          @db.Timestamptz(6)
+  student_id  String
+  subject_id  String
+  students    students          @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  subjects    subjects          @relation(fields: [subject_id], references: [id], onDelete: Cascade)
+
+  @@id([student_id, subject_id])
+}
+
+model students {
+  id                     String                   @id
+  created_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime                 @db.Timestamptz(6)
+  deleted_at             DateTime?                @db.Timestamptz(6)
+  user_id                String                   @unique
+  parent_id              String?
+  is_active              Boolean                  @default(false)
+  attendance_logs        attendance_logs[]
+  cancellations          cancellations[]
+  gamification_points    gamification_points[]
+  payments               payments[]
+  quran_progresses       quran_progresses?
+  recurring_schedules    recurring_schedules[]
+  sessions               sessions[]
+  student_assessments    student_assessments[]
+  student_availabilities student_availabilities[]
+  student_subjects       student_subjects[]
+  parents                parents?                 @relation(fields: [parent_id], references: [id])
+  users                  users                    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  subscriptions          subscriptions[]
+  teacher_ratings        teacher_ratings[]
+}
+
+model subjects {
+  id                          String                        @id
+  name_en                     String
+  name_ar                     String
+  description_en              String?
+  description_ar              String?
+  is_active                   Boolean                       @default(true)
+  is_sub                      Boolean                       @default(false)
+  created_at                  DateTime                      @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime                      @db.Timestamptz(6)
+  deleted_at                  DateTime?                     @db.Timestamptz(6)
+  parent_id                   String?
+  recurring_schedule_subjects recurring_schedule_subjects[]
+  session_subjects            session_subjects[]
+  student_assessments         student_assessments[]
+  student_subjects            student_subjects[]
+  subjects                    subjects?                     @relation("subjectsTosubjects", fields: [parent_id], references: [id])
+  other_subjects              subjects[]                    @relation("subjectsTosubjects")
+  teacher_subjects            teacher_subjects[]
+}
+
+model subscriptions {
+  id               String              @id
+  plan_type        plan_type           @default(custom)
+  sessions_total   Int?
+  sessions_used    Int                 @default(0)
+  price            Decimal             @db.Decimal(10, 2)
+  currency         String              @default("USD")
+  billing_start    DateTime            @db.Timestamptz(6)
+  billing_end      DateTime?           @db.Timestamptz(6)
+  status           subscription_status @default(active)
+  created_at       DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime            @db.Timestamptz(6)
+  deleted_at       DateTime?           @db.Timestamptz(6)
+  student_id       String
+  promo_code_id    String?
+  hourly_price     Decimal             @db.Decimal(10, 2)
+  session_duration Int                 @default(30)
+  invoices         invoices[]
+  promo_codes      promo_codes?        @relation(fields: [promo_code_id], references: [id])
+  students         students            @relation(fields: [student_id], references: [id], onDelete: Cascade)
+
+  @@index([student_id, status])
+}
+
+model teacher_availabilities {
+  id             String      @id
+  day_of_week    day_of_week
+  start_time_utc DateTime    @db.Timetz(6)
+  end_time_utc   DateTime    @db.Timetz(6)
+  is_backup_slot Boolean     @default(false)
+  created_at     DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime    @db.Timestamptz(6)
+  teacher_id     String
+  teachers       teachers    @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+}
+
+model teacher_ratings {
+  id                  String    @id
+  rating              Int       @db.SmallInt
+  comment             String?
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime  @db.Timestamptz(6)
+  session_id          String    @unique
+  teacher_id          String
+  rated_by_student_id String?
+  rated_by_parent_id  String?
+  parents             parents?  @relation(fields: [rated_by_parent_id], references: [id])
+  students            students? @relation(fields: [rated_by_student_id], references: [id])
+  sessions            sessions  @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  teachers            teachers  @relation(fields: [teacher_id], references: [id])
+}
+
+model teacher_subjects {
+  is_verified Boolean  @default(false)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @db.Timestamptz(6)
+  teacher_id  String
+  subject_id  String
+  subjects    subjects @relation(fields: [subject_id], references: [id], onDelete: Cascade)
+  teachers    teachers @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+
+  @@id([teacher_id, subject_id])
+}
+
+model teachers {
+  id                                                String                   @id
+  bio                                               String?
+  hourly_rate                                       Decimal?                 @db.Decimal(10, 2)
+  currency                                          String?                  @default("EGP")
+  created_at                                        DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at                                        DateTime                 @db.Timestamptz(6)
+  deleted_at                                        DateTime?                @db.Timestamptz(6)
+  user_id                                           String                   @unique
+  is_active                                         Boolean                  @default(false)
+  attendance_logs                                   attendance_logs[]
+  cancellations                                     cancellations[]
+  dispatch_requests                                 dispatch_requests[]
+  dispatch_responses                                dispatch_responses[]
+  recurring_schedules                               recurring_schedules[]
+  session_reports                                   session_reports[]
+  sessions_sessions_substitute_teacher_idToteachers sessions[]               @relation("sessions_substitute_teacher_idToteachers")
+  sessions_sessions_teacher_idToteachers            sessions[]               @relation("sessions_teacher_idToteachers")
+  student_assessments                               student_assessments[]
+  teacher_availabilities                            teacher_availabilities[]
+  teacher_ratings                                   teacher_ratings[]
+  teacher_subjects                                  teacher_subjects[]
+  users                                             users                    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model users {
+  id                        String                      @id
+  full_name                 String?
+  first_name                String?
+  middle_name               String?
+  last_name                 String?
+  email                     String?                     @unique
+  password_hash             String?
+  gender                    gender?
+  country                   String?
+  city                      String?
+  country_code              String?
+  phone_number              String?
+  timezone                  String                      @default("UTC")
+  primary_language          String?
+  secondary_languages       String[]                    @default([])
+  is_active                 Boolean                     @default(true)
+  created_at                DateTime                    @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime                    @db.Timestamptz(6)
+  deleted_at                DateTime?                   @db.Timestamptz(6)
+  username                  String?                     @unique
+  grant_login               Boolean                     @default(false)
+  is_email_verified         Boolean                     @default(false)
+  is_phone_number_verified  Boolean                     @default(false)
+  active_profiles           String[]                    @default([])
+  attachments               attachments[]
+  audit_logs                audit_logs[]
+  conversation_participants conversation_participants[]
+  credential_invites        credential_invites?
+  messages                  messages[]
+  notifications             notifications[]
+  parents                   parents?
+  students                  students?
+  teachers                  teachers?
+  users_permissions_junc    users_permissions_junc[]
+  roles                     roles[]                     @relation("user_to_role_relation")
+
+  @@unique([country_code, phone_number])
+}
+
+model users_permissions_junc {
+  user_id        String
+  operation_name String
+  effect         AccessEffect         @default(allow)
+  condition      permission_condition
+  created_at     DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime             @db.Timestamptz(6)
+  permissions    permissions          @relation(fields: [operation_name], references: [operation_name], onDelete: Cascade)
+  users          users                @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, operation_name])
+}
+
+enum AccessEffect {
+  allow
+  deny
+}
+
+enum attendance_source {
+  webhook_zoom
+  webhook_gmeet
+  manual_teacher
+  manual_admin
+}
+
+enum attention_level {
+  excellent
+  good
+  acceptable
+  weak
+}
+
+enum audit_action {
+  create
+  update
+  delete
+}
+
+enum badge_type {
+  no_absence_week
+  no_absence_month
+  juzz_completed
+  surah_completed
+  streak_7_days
+  streak_30_days
+  first_session
+  custom
+}
+
+enum cancellation_actor {
+  teacher
+  student
+  parent
+  admin
+}
+
+enum day_of_week {
+  monday
+  tuesday
+  wednesday
+  thursday
+  friday
+  saturday
+  sunday
+}
+
+enum dispatch_response_option {
+  accepted
+  declined
+  no_response
+}
+
+enum dispatch_status {
+  pending
+  accepted
+  expired
+  cancelled
+}
+
+enum enrollment_status {
+  active
+  paused
+  completed
+  dropped
+}
+
+enum gender {
+  male
+  female
+  other
+}
+
+enum invoice_status {
+  pending
+  paid
+  overdue
+  suspended
+  cancelled
+}
+
+enum letters_skill {
+  excellent
+  good
+  weak
+}
+
+enum meeting_platform {
+  zoom
+  google_meet
+  other
+}
+
+enum notification_channel {
+  whatsapp
+  email
+  push
+  in_app
+}
+
+enum notification_type {
+  session_reminder
+  session_report
+  invoice_issued
+  invoice_overdue
+  account_suspended
+  backup_teacher_needed
+  backup_teacher_assigned
+  makeup_session_scheduled
+  gamification_badge
+  general
+}
+
+enum overall_level {
+  excellent
+  very_good
+  good
+  acceptable
+  weak
+}
+
+enum payment_gateway {
+  stripe
+  paypal
+  manual
+  other
+}
+
+enum payment_status {
+  pending
+  completed
+  failed
+  refunded
+}
+
+enum permission_action {
+  get
+  create
+  update
+  delete
+}
+
+enum permission_condition {
+  all
+  own
+  managed
+  none
+}
+
+enum plan_type {
+  monthly
+  package_10
+  package_20
+  package_40
+  custom
+}
+
+enum reading_skill {
+  proficient
+  spells
+  none
+}
+
+enum recitation_type {
+  new
+  recent_review
+  distant_review
+}
+
+enum session_status {
+  awaiting_confirmation
+  scheduled
+  ongoing
+  completed
+  cancelled
+  no_show
+}
+
+enum subscription_status {
+  active
+  suspended
+  expired
+  cancelled
+}
+
+enum tajweed_skill {
+  proficient
+  with_difficulty
+  none
+}

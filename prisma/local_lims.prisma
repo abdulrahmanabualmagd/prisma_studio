@@ -1,6 +1,5 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -25,6 +24,61 @@ model age_operators {
   base_scopes                           base_scopes? @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
   users_age_operators_creator_idTousers users?       @relation("age_operators_creator_idTousers", fields: [creator_id], references: [id])
   users_age_operators_updater_idTousers users?       @relation("age_operators_updater_idTousers", fields: [updater_id], references: [id])
+}
+
+model agenda_events {
+  id                                    Int             @id @default(autoincrement())
+  name_en                               String?         @db.VarChar(255)
+  name_ar                               String?         @db.VarChar(255)
+  start_date                            DateTime?       @db.Timestamptz(6)
+  end_date                              DateTime?       @db.Timestamptz(6)
+  duration                              Int?
+  agenda_id                             Int?
+  base_scope_id                         Int?            @unique
+  patient_visit_id                      Int?            @unique
+  created_at                            DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at                            DateTime        @db.Timestamptz(6)
+  creator_id                            Int?
+  updater_id                            Int?
+  agendas                               agendas?        @relation(fields: [agenda_id], references: [id])
+  base_scopes                           base_scopes?    @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
+  users_agenda_events_creator_idTousers users?          @relation("agenda_events_creator_idTousers", fields: [creator_id], references: [id])
+  patient_visits                        patient_visits? @relation(fields: [patient_visit_id], references: [id], onDelete: Cascade)
+  users_agenda_events_updater_idTousers users?          @relation("agenda_events_updater_idTousers", fields: [updater_id], references: [id])
+}
+
+model agenda_exception_time_ranges {
+  id                                                   Int                @id @default(autoincrement())
+  start_time                                           DateTime?          @db.Timetz(6)
+  end_time                                             DateTime?          @db.Timetz(6)
+  agenda_exception_id                                  Int?
+  created_at                                           DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at                                           DateTime           @db.Timestamptz(6)
+  creator_id                                           Int?
+  updater_id                                           Int?
+  base_scope_id                                        Int?               @unique
+  agenda_exceptions                                    agenda_exceptions? @relation(fields: [agenda_exception_id], references: [id], onDelete: Cascade)
+  base_scopes                                          base_scopes?       @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
+  users_agenda_exception_time_ranges_creator_idTousers users?             @relation("agenda_exception_time_ranges_creator_idTousers", fields: [creator_id], references: [id])
+  users_agenda_exception_time_ranges_updater_idTousers users?             @relation("agenda_exception_time_ranges_updater_idTousers", fields: [updater_id], references: [id])
+}
+
+model agenda_exceptions {
+  id                                        Int                            @id @default(autoincrement())
+  date                                      DateTime?                      @db.Timestamptz(6)
+  type                                      String?                        @db.VarChar(255)
+  reason                                    String?                        @db.VarChar(255)
+  agenda_id                                 Int?
+  created_at                                DateTime                       @default(now()) @db.Timestamptz(6)
+  updated_at                                DateTime                       @db.Timestamptz(6)
+  creator_id                                Int?
+  updater_id                                Int?
+  base_scope_id                             Int?                           @unique
+  agenda_exception_time_ranges              agenda_exception_time_ranges[]
+  agendas                                   agendas?                       @relation(fields: [agenda_id], references: [id], onDelete: Cascade)
+  base_scopes                               base_scopes?                   @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
+  users_agenda_exceptions_creator_idTousers users?                         @relation("agenda_exceptions_creator_idTousers", fields: [creator_id], references: [id])
+  users_agenda_exceptions_updater_idTousers users?                         @relation("agenda_exceptions_updater_idTousers", fields: [updater_id], references: [id])
 }
 
 model agenda_time_ranges {
@@ -113,6 +167,22 @@ model aggregate_results {
   comment_entries                                                                       comment_entries[]
   status_states                                                                         status_states[]
   companies                                                                             companies[]         @relation("AssignAggregateResultsToCompanies")
+}
+
+model analyte_grouping_titles {
+  id                                              Int          @id @default(autoincrement())
+  name_en                                         String?      @db.VarChar(255)
+  name_ar                                         String?      @db.VarChar(255)
+  description                                     String?
+  base_scope_id                                   Int?         @unique
+  created_at                                      DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at                                      DateTime     @db.Timestamptz(6)
+  creator_id                                      Int?
+  updater_id                                      Int?
+  base_scopes                                     base_scopes? @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
+  users_analyte_grouping_titles_creator_idTousers users?       @relation("analyte_grouping_titles_creator_idTousers", fields: [creator_id], references: [id])
+  users_analyte_grouping_titles_updater_idTousers users?       @relation("analyte_grouping_titles_updater_idTousers", fields: [updater_id], references: [id])
+  procedures                                      procedures[]
 }
 
 model antibiotic_families {
@@ -241,6 +311,18 @@ model attachments {
   standard_methods                    standard_methods?        @relation(fields: [standard_method_id], references: [id], onDelete: Cascade)
   tests                               tests?                   @relation(fields: [test_id], references: [id], onDelete: Cascade)
   users_attachments_updater_idTousers users?                   @relation("attachments_updater_idTousers", fields: [updater_id], references: [id])
+}
+
+model audit_logs {
+  id         Int      @id @default(autoincrement())
+  model      String   @db.VarChar(255)
+  record_id  String   @db.VarChar(255)
+  action     String   @db.VarChar(50)
+  previous   Json?
+  current    Json?
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  creator_id Int?
+  users      users?   @relation(fields: [creator_id], references: [id])
 }
 
 model base_scopes {
@@ -562,6 +644,179 @@ model code_templates {
   base_scopes                            base_scopes?    @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
   users_code_templates_creator_idTousers users?          @relation("code_templates_creator_idTousers", fields: [creator_id], references: [id])
   users_code_templates_updater_idTousers users?          @relation("code_templates_updater_idTousers", fields: [updater_id], references: [id])
+}
+
+model comment_entries {
+  id                                      Int                      @id @default(autoincrement())
+  comment                                 String?
+  label_en                                String?                  @db.VarChar(255)
+  label_ar                                String?                  @db.VarChar(255)
+  type                                    String?                  @default("not_applicable") @db.VarChar(255)
+  active                                  Boolean                  @default(true)
+  measurement_result_id                   Int?
+  measurement_result_log_id               Int?
+  aggregate_result_id                     Int?
+  base_scope_id                           Int?                     @unique
+  created_at                              DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at                              DateTime                 @db.Timestamptz(6)
+  creator_id                              Int?
+  updater_id                              Int?
+  aggregate_results                       aggregate_results?       @relation(fields: [aggregate_result_id], references: [id], onDelete: Cascade)
+  base_scopes                             base_scopes?             @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
+  users_comment_entries_creator_idTousers users?                   @relation("comment_entries_creator_idTousers", fields: [creator_id], references: [id])
+  measurement_results                     measurement_results?     @relation(fields: [measurement_result_id], references: [id], onDelete: Cascade)
+  measurement_result_logs                 measurement_result_logs? @relation(fields: [measurement_result_log_id], references: [id], onDelete: Cascade)
+  users_comment_entries_updater_idTousers users?                   @relation("comment_entries_updater_idTousers", fields: [updater_id], references: [id])
+}
+
+model comments {
+  id                               Int          @id @default(autoincrement())
+  comment                          String?
+  label_en                         String?      @db.VarChar(255)
+  label_ar                         String?      @db.VarChar(255)
+  type                             String?      @default("not_applicable") @db.VarChar(255)
+  active                           Boolean      @default(true)
+  procedure_id                     Int?
+  category_id                      Int?
+  base_scope_id                    Int?         @unique
+  created_at                       DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at                       DateTime     @db.Timestamptz(6)
+  creator_id                       Int?
+  updater_id                       Int?
+  base_scopes                      base_scopes? @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
+  categories                       categories?  @relation(fields: [category_id], references: [id])
+  users_comments_creator_idTousers users?       @relation("comments_creator_idTousers", fields: [creator_id], references: [id])
+  procedures                       procedures?  @relation(fields: [procedure_id], references: [id], onDelete: Cascade)
+  users_comments_updater_idTousers users?       @relation("comments_updater_idTousers", fields: [updater_id], references: [id])
+}
+
+model commission_payouts {
+  id                                         Int                         @id @default(autoincrement())
+  start_date                                 DateTime                    @db.Timestamptz(6)
+  end_date                                   DateTime                    @db.Timestamptz(6)
+  user_id                                    Int
+  commission_rule_id                         Int
+  commission_rule_snapshot                   Json?
+  performance_count                          Int
+  performance_sum                            Decimal                     @db.Decimal(15, 4)
+  matched_count_tier                         Json?
+  matched_sum_tier                           Json?
+  commission_count_total                     Decimal                     @db.Decimal(15, 4)
+  commission_sum_total                       Decimal                     @db.Decimal(15, 4)
+  base_scope_id                              Int?                        @unique
+  created_at                                 DateTime                    @default(now()) @db.Timestamptz(6)
+  updated_at                                 DateTime                    @db.Timestamptz(6)
+  creator_id                                 Int?
+  updater_id                                 Int?
+  bill_item_id                               Int?
+  offer_type                                 String?                     @db.VarChar(255)
+  status                                     String                      @default("pending")
+  base_scopes                                base_scopes?                @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
+  bill_items                                 bill_items?                 @relation(fields: [bill_item_id], references: [id])
+  commission_rules                           commission_rules            @relation(fields: [commission_rule_id], references: [id], onDelete: Cascade)
+  users_commission_payouts_creator_idTousers users?                      @relation("commission_payouts_creator_idTousers", fields: [creator_id], references: [id])
+  users_commission_payouts_updater_idTousers users?                      @relation("commission_payouts_updater_idTousers", fields: [updater_id], references: [id])
+  users_commission_payouts_user_idTousers    users                       @relation("commission_payouts_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade)
+  invoice_items_sales_users                  invoice_items_sales_users[]
+}
+
+model commission_roles {
+  id                                               Int                @id @default(autoincrement())
+  name_en                                          String?            @db.VarChar(255)
+  name_ar                                          String?            @db.VarChar(255)
+  description                                      String?
+  base_scope_id                                    Int?               @unique
+  created_at                                       DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at                                       DateTime           @db.Timestamptz(6)
+  creator_id                                       Int?
+  updater_id                                       Int?
+  base_scopes                                      base_scopes?       @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
+  users_commission_roles_creator_idTousers         users?             @relation("commission_roles_creator_idTousers", fields: [creator_id], references: [id])
+  users_commission_roles_updater_idTousers         users?             @relation("commission_roles_updater_idTousers", fields: [updater_id], references: [id])
+  commission_rules                                 commission_rules[]
+  users_users_commission_role_idTocommission_roles users[]            @relation("users_commission_role_idTocommission_roles")
+}
+
+model commission_rule_items {
+  rule_id          Int
+  item_id          Int
+  item_type        String
+  commission_rules commission_rules @relation(fields: [rule_id], references: [id], onDelete: Cascade)
+
+  @@id([rule_id, item_id, item_type])
+}
+
+model commission_rule_matched_items {
+  rule_id          Int
+  item_id          Int
+  item_type        String
+  commission_rules commission_rules @relation(fields: [rule_id], references: [id], onDelete: Cascade)
+
+  @@id([rule_id, item_id, item_type])
+}
+
+model commission_rule_tiers {
+  id                                                                           Int               @id @default(autoincrement())
+  name_ar                                                                      String?
+  name_en                                                                      String?
+  commission_value_type                                                        String?
+  commission_value                                                             Float?
+  threshold_value_type                                                         String?
+  threshold_value                                                              Float?
+  total_count_rule_id                                                          Int?
+  total_sum_rule_id                                                            Int?
+  base_scope_id                                                                Int?              @unique
+  created_at                                                                   DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at                                                                   DateTime          @db.Timestamptz(6)
+  creator_id                                                                   Int?
+  updater_id                                                                   Int?
+  base_scopes                                                                  base_scopes?      @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
+  users_commission_rule_tiers_creator_idTousers                                users?            @relation("commission_rule_tiers_creator_idTousers", fields: [creator_id], references: [id])
+  commission_rules_commission_rule_tiers_total_count_rule_idTocommission_rules commission_rules? @relation("commission_rule_tiers_total_count_rule_idTocommission_rules", fields: [total_count_rule_id], references: [id], onDelete: Cascade)
+  commission_rules_commission_rule_tiers_total_sum_rule_idTocommission_rules   commission_rules? @relation("commission_rule_tiers_total_sum_rule_idTocommission_rules", fields: [total_sum_rule_id], references: [id], onDelete: Cascade)
+  users_commission_rule_tiers_updater_idTousers                                users?            @relation("commission_rule_tiers_updater_idTousers", fields: [updater_id], references: [id])
+}
+
+model commission_rules {
+  id                                                                                Int                             @id @default(autoincrement())
+  commission_role_id                                                                Int?
+  contractor_id                                                                     Int?
+  category_id                                                                       Int?
+  base_scope_id                                                                     Int?                            @unique
+  created_at                                                                        DateTime                        @default(now()) @db.Timestamptz(6)
+  updated_at                                                                        DateTime                        @db.Timestamptz(6)
+  creator_id                                                                        Int?
+  updater_id                                                                        Int?
+  region_id                                                                         Int?
+  description                                                                       String?
+  name_ar                                                                           String?
+  name_en                                                                           String?
+  contract_id                                                                       Int?
+  total_count_period_unit                                                           String?
+  total_count_period_value                                                          Int?
+  total_count_tier_base                                                             Int?
+  total_sum_period_unit                                                             String?
+  total_sum_period_value                                                            Int?
+  total_sum_tier_base                                                               Int?
+  condition_beneficiary_id                                                          Int?
+  contract_condition_id                                                             Int?
+  offer_type                                                                        String?                         @db.VarChar(255)
+  commission_payouts                                                                commission_payouts[]
+  commission_rule_items                                                             commission_rule_items[]
+  commission_rule_matched_items                                                     commission_rule_matched_items[]
+  commission_rule_tiers_commission_rule_tiers_total_count_rule_idTocommission_rules commission_rule_tiers[]         @relation("commission_rule_tiers_total_count_rule_idTocommission_rules")
+  commission_rule_tiers_commission_rule_tiers_total_sum_rule_idTocommission_rules   commission_rule_tiers[]         @relation("commission_rule_tiers_total_sum_rule_idTocommission_rules")
+  base_scopes                                                                       base_scopes?                    @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
+  categories                                                                        categories?                     @relation(fields: [category_id], references: [id])
+  commission_roles                                                                  commission_roles?               @relation(fields: [commission_role_id], references: [id])
+  conditions_beneficiaries                                                          conditions_beneficiaries?       @relation(fields: [condition_beneficiary_id], references: [id])
+  contract_conditions                                                               contract_conditions?            @relation(fields: [contract_condition_id], references: [id])
+  contracts                                                                         contracts?                      @relation(fields: [contract_id], references: [id])
+  contractors                                                                       contractors?                    @relation(fields: [contractor_id], references: [id])
+  users_commission_rules_creator_idTousers                                          users?                          @relation("commission_rules_creator_idTousers", fields: [creator_id], references: [id])
+  regions                                                                           regions?                        @relation(fields: [region_id], references: [id])
+  users_commission_rules_updater_idTousers                                          users?                          @relation("commission_rules_updater_idTousers", fields: [updater_id], references: [id])
+  invoice_items_sales_users                                                         invoice_items_sales_users[]
 }
 
 model companies {
@@ -922,6 +1177,56 @@ model discounts {
   users_discounts_updater_idTousers users?       @relation("discounts_updater_idTousers", fields: [updater_id], references: [id])
 }
 
+model dynamic_column_values {
+  id                                            Int                  @id @default(autoincrement())
+  value                                         Json?
+  dynamic_column_id                             Int
+  patient_id                                    Int?
+  patient_visit_id                              Int?
+  patient_case_id                               Int?
+  procedure_id                                  Int?
+  sample_id                                     Int?
+  measurement_result_id                         Int?
+  base_scope_id                                 Int?                 @unique
+  created_at                                    DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at                                    DateTime             @db.Timestamptz(6)
+  creator_id                                    Int?
+  updater_id                                    Int?
+  base_scopes                                   base_scopes?         @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
+  users_dynamic_column_values_creator_idTousers users?               @relation("dynamic_column_values_creator_idTousers", fields: [creator_id], references: [id])
+  dynamic_columns                               dynamic_columns      @relation(fields: [dynamic_column_id], references: [id], onDelete: Cascade)
+  measurement_results                           measurement_results? @relation(fields: [measurement_result_id], references: [id], onDelete: Cascade)
+  patient_cases                                 patient_cases?       @relation(fields: [patient_case_id], references: [id], onDelete: Cascade)
+  patients                                      patients?            @relation(fields: [patient_id], references: [id], onDelete: Cascade)
+  patient_visits                                patient_visits?      @relation(fields: [patient_visit_id], references: [id], onDelete: Cascade)
+  procedures                                    procedures?          @relation(fields: [procedure_id], references: [id], onDelete: Cascade)
+  samples                                       samples?             @relation(fields: [sample_id], references: [id], onDelete: Cascade)
+  users_dynamic_column_values_updater_idTousers users?               @relation("dynamic_column_values_updater_idTousers", fields: [updater_id], references: [id])
+}
+
+model dynamic_columns {
+  id                                      Int                     @id @default(autoincrement())
+  name_ar                                 String?                 @db.VarChar(255)
+  name_en                                 String?                 @db.VarChar(255)
+  short_name_ar                           String?                 @db.VarChar(255)
+  short_name_en                           String?                 @db.VarChar(255)
+  use_short_name                          Boolean?                @default(true)
+  column_type                             ColumnType?
+  is_required                             Boolean?                @default(true)
+  default_value                           String?
+  options                                 Json[]                  @default([])
+  active                                  Boolean                 @default(true)
+  base_scope_id                           Int?                    @unique
+  created_at                              DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at                              DateTime                @db.Timestamptz(6)
+  creator_id                              Int?
+  updater_id                              Int?
+  dynamic_column_values                   dynamic_column_values[]
+  base_scopes                             base_scopes?            @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
+  users_dynamic_columns_creator_idTousers users?                  @relation("dynamic_columns_creator_idTousers", fields: [creator_id], references: [id])
+  users_dynamic_columns_updater_idTousers users?                  @relation("dynamic_columns_updater_idTousers", fields: [updater_id], references: [id])
+}
+
 model formula_variables {
   id                                        Int          @id @default(autoincrement())
   name                                      String?
@@ -1125,6 +1430,27 @@ model invoice_items {
   users_invoice_items_updater_idTousers                        users?                      @relation("invoice_items_updater_idTousers", fields: [updater_id], references: [id])
   invoice_items_sales_users                                    invoice_items_sales_users[]
   invoice_transactions                                         invoice_transactions?
+}
+
+model invoice_items_sales_users {
+  id                       Int                 @id @default(autoincrement())
+  status                   String?             @default("pending")
+  commission_rule_snapshot Json?
+  invoice_item_id          Int
+  user_id                  Int
+  commission_rule_id       Int?
+  base_scope_id            Int?                @unique
+  created_at               DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime            @db.Timestamptz(6)
+  visit_date               DateTime?           @db.Timestamptz(6)
+  commission_payout_id     Int?
+  base_scopes              base_scopes?        @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
+  commission_payouts       commission_payouts? @relation(fields: [commission_payout_id], references: [id])
+  commission_rules         commission_rules?   @relation(fields: [commission_rule_id], references: [id])
+  invoice_items            invoice_items       @relation(fields: [invoice_item_id], references: [id], onDelete: Cascade)
+  users                    users               @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([invoice_item_id, user_id])
 }
 
 model invoice_payment_methods {
@@ -1338,6 +1664,66 @@ model measurement_results {
   users_measurement_results_updater_idTousers                                             users?                       @relation("measurement_results_updater_idTousers", fields: [updater_id], references: [id])
   sensitivity_test_organisms                                                              sensitivity_test_organisms[]
   companies                                                                               companies[]                  @relation("AssignMeasurementResultsToCompanies")
+}
+
+model notes {
+  id                            Int          @id @default(autoincrement())
+  note                          String?
+  screen                        String?      @db.VarChar(255)
+  request_id                    Int?
+  base_scope_id                 Int?         @unique
+  created_at                    DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at                    DateTime     @db.Timestamptz(6)
+  creator_id                    Int?
+  updater_id                    Int?
+  base_scopes                   base_scopes? @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
+  users_notes_creator_idTousers users?       @relation("notes_creator_idTousers", fields: [creator_id], references: [id])
+  requests                      requests?    @relation(fields: [request_id], references: [id], onDelete: Cascade)
+  users_notes_updater_idTousers users?       @relation("notes_updater_idTousers", fields: [updater_id], references: [id])
+}
+
+model notification_rules {
+  id                                         Int                   @id @default(autoincrement())
+  action_key                                 String?               @unique
+  start_date                                 DateTime?
+  end_date                                   DateTime?
+  type                                       NotificationRuleType?
+  title                                      String?
+  description                                String?
+  is_active                                  Boolean               @default(true)
+  channels                                   NotificationChannel[]
+  created_at                                 DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at                                 DateTime              @db.Timestamptz(6)
+  creator_id                                 Int?
+  updater_id                                 Int?
+  base_scope_id                              Int?                  @unique
+  base_scopes                                base_scopes?          @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
+  users_notification_rules_creator_idTousers users?                @relation("notification_rules_creator_idTousers", fields: [creator_id], references: [id])
+  users_notification_rules_updater_idTousers users?                @relation("notification_rules_updater_idTousers", fields: [updater_id], references: [id])
+  notifications                              notifications[]
+  groups                                     groups[]              @relation("GroupToNotificationRule")
+  users_UserToNotificationRule               users[]               @relation("UserToNotificationRule")
+}
+
+model notifications {
+  id                                    Int                  @id @default(autoincrement())
+  rule_id                               Int
+  user_id                               Int
+  title                                 String
+  description                           String
+  type                                  NotificationRuleType
+  is_read                               Boolean              @default(false)
+  sent_at                               DateTime             @default(now())
+  created_at                            DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at                            DateTime             @db.Timestamptz(6)
+  creator_id                            Int?
+  updater_id                            Int?
+  base_scope_id                         Int?                 @unique
+  base_scopes                           base_scopes?         @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
+  users_notifications_creator_idTousers users?               @relation("notifications_creator_idTousers", fields: [creator_id], references: [id])
+  notification_rules                    notification_rules   @relation(fields: [rule_id], references: [id], onDelete: Cascade)
+  users_notifications_updater_idTousers users?               @relation("notifications_updater_idTousers", fields: [updater_id], references: [id])
+  users_notifications_user_idTousers    users                @relation("notifications_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 model organisms {
@@ -1579,6 +1965,17 @@ model patients {
   users_patients_updater_idTousers users?                       @relation("patients_updater_idTousers", fields: [updater_id], references: [id])
   phone_users                      phone_users[]
   patient_classifications          patient_classifications[]    @relation("PatientToPatientClassifications")
+}
+
+model phone_users {
+  id            Int          @id @default(autoincrement())
+  patient_id    Int?
+  contractor_id Int?
+  login_code    String?      @db.VarChar(255)
+  base_scope_id Int?         @unique
+  base_scopes   base_scopes? @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
+  contractors   contractors? @relation(fields: [contractor_id], references: [id])
+  patients      patients?    @relation(fields: [patient_id], references: [id])
 }
 
 model price_logs {
@@ -1827,6 +2224,44 @@ model reference_ranges {
   standard_methods                         standard_methods?     @relation(fields: [standard_method_id], references: [id], onDelete: Cascade)
   units                                    units?                @relation(fields: [unit_id], references: [id], onDelete: Cascade)
   users_reference_ranges_updater_idTousers users?                @relation("reference_ranges_updater_idTousers", fields: [updater_id], references: [id])
+}
+
+model region_types {
+  id              Int            @id @default(autoincrement())
+  object_id       String?        @unique @db.VarChar(255)
+  name_ar         String?        @db.VarChar(255)
+  name_en         String?        @db.VarChar(255)
+  serial          String?        @db.VarChar(255)
+  active          Boolean?       @default(true)
+  deleted         Boolean?       @default(false)
+  created_at      DateTime?      @db.Timestamptz(6)
+  updated_at      DateTime?      @db.Timestamptz(6)
+  organization_id Int?
+  organizations   organizations? @relation(fields: [organization_id], references: [id])
+  regions         regions[]
+}
+
+model regions {
+  id               Int                @id @default(autoincrement())
+  object_id        String?            @unique @db.VarChar(255)
+  name_ar          String?            @db.VarChar(255)
+  name_en          String?            @db.VarChar(255)
+  active           Boolean?
+  deleted          Boolean?
+  created_at       DateTime?          @db.Timestamptz(6)
+  updated_at       DateTime?          @db.Timestamptz(6)
+  parent_id        Int?
+  organization_id  Int?
+  region_type_id   Int?
+  path_ar          String?            @db.VarChar(255)
+  path_en          String?            @db.VarChar(255)
+  base_scopes      base_scopes[]
+  commission_rules commission_rules[]
+  contractors      contractors[]
+  organizations    organizations?     @relation(fields: [organization_id], references: [id])
+  regions          regions?           @relation("regionsToregions", fields: [parent_id], references: [id])
+  other_regions    regions[]          @relation("regionsToregions")
+  region_types     region_types?      @relation(fields: [region_type_id], references: [id])
 }
 
 model request_procedures {
@@ -2620,442 +3055,6 @@ model workflows {
   base_scopes                       base_scopes?         @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
   users_workflows_creator_idTousers users?               @relation("workflows_creator_idTousers", fields: [creator_id], references: [id])
   users_workflows_updater_idTousers users?               @relation("workflows_updater_idTousers", fields: [updater_id], references: [id])
-}
-
-model comment_entries {
-  id                                      Int                      @id @default(autoincrement())
-  comment                                 String?
-  label_en                                String?                  @db.VarChar(255)
-  label_ar                                String?                  @db.VarChar(255)
-  type                                    String?                  @default("not_applicable") @db.VarChar(255)
-  active                                  Boolean                  @default(true)
-  measurement_result_id                   Int?
-  measurement_result_log_id               Int?
-  aggregate_result_id                     Int?
-  base_scope_id                           Int?                     @unique
-  created_at                              DateTime                 @default(now()) @db.Timestamptz(6)
-  updated_at                              DateTime                 @db.Timestamptz(6)
-  creator_id                              Int?
-  updater_id                              Int?
-  aggregate_results                       aggregate_results?       @relation(fields: [aggregate_result_id], references: [id], onDelete: Cascade)
-  base_scopes                             base_scopes?             @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
-  users_comment_entries_creator_idTousers users?                   @relation("comment_entries_creator_idTousers", fields: [creator_id], references: [id])
-  measurement_results                     measurement_results?     @relation(fields: [measurement_result_id], references: [id], onDelete: Cascade)
-  measurement_result_logs                 measurement_result_logs? @relation(fields: [measurement_result_log_id], references: [id], onDelete: Cascade)
-  users_comment_entries_updater_idTousers users?                   @relation("comment_entries_updater_idTousers", fields: [updater_id], references: [id])
-}
-
-model comments {
-  id                               Int          @id @default(autoincrement())
-  comment                          String?
-  label_en                         String?      @db.VarChar(255)
-  label_ar                         String?      @db.VarChar(255)
-  type                             String?      @default("not_applicable") @db.VarChar(255)
-  active                           Boolean      @default(true)
-  procedure_id                     Int?
-  category_id                      Int?
-  base_scope_id                    Int?         @unique
-  created_at                       DateTime     @default(now()) @db.Timestamptz(6)
-  updated_at                       DateTime     @db.Timestamptz(6)
-  creator_id                       Int?
-  updater_id                       Int?
-  base_scopes                      base_scopes? @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
-  categories                       categories?  @relation(fields: [category_id], references: [id])
-  users_comments_creator_idTousers users?       @relation("comments_creator_idTousers", fields: [creator_id], references: [id])
-  procedures                       procedures?  @relation(fields: [procedure_id], references: [id], onDelete: Cascade)
-  users_comments_updater_idTousers users?       @relation("comments_updater_idTousers", fields: [updater_id], references: [id])
-}
-
-model analyte_grouping_titles {
-  id                                              Int          @id @default(autoincrement())
-  name_en                                         String?      @db.VarChar(255)
-  name_ar                                         String?      @db.VarChar(255)
-  description                                     String?
-  base_scope_id                                   Int?         @unique
-  created_at                                      DateTime     @default(now()) @db.Timestamptz(6)
-  updated_at                                      DateTime     @db.Timestamptz(6)
-  creator_id                                      Int?
-  updater_id                                      Int?
-  base_scopes                                     base_scopes? @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
-  users_analyte_grouping_titles_creator_idTousers users?       @relation("analyte_grouping_titles_creator_idTousers", fields: [creator_id], references: [id])
-  users_analyte_grouping_titles_updater_idTousers users?       @relation("analyte_grouping_titles_updater_idTousers", fields: [updater_id], references: [id])
-  procedures                                      procedures[]
-}
-
-model audit_logs {
-  id         Int      @id @default(autoincrement())
-  model      String   @db.VarChar(255)
-  record_id  String   @db.VarChar(255)
-  action     String   @db.VarChar(50)
-  previous   Json?
-  current    Json?
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  creator_id Int?
-  users      users?   @relation(fields: [creator_id], references: [id])
-}
-
-model agenda_events {
-  id                                    Int             @id @default(autoincrement())
-  name_en                               String?         @db.VarChar(255)
-  name_ar                               String?         @db.VarChar(255)
-  start_date                            DateTime?       @db.Timestamptz(6)
-  end_date                              DateTime?       @db.Timestamptz(6)
-  duration                              Int?
-  agenda_id                             Int?
-  base_scope_id                         Int?            @unique
-  patient_visit_id                      Int?            @unique
-  created_at                            DateTime        @default(now()) @db.Timestamptz(6)
-  updated_at                            DateTime        @db.Timestamptz(6)
-  creator_id                            Int?
-  updater_id                            Int?
-  agendas                               agendas?        @relation(fields: [agenda_id], references: [id])
-  base_scopes                           base_scopes?    @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
-  users_agenda_events_creator_idTousers users?          @relation("agenda_events_creator_idTousers", fields: [creator_id], references: [id])
-  patient_visits                        patient_visits? @relation(fields: [patient_visit_id], references: [id], onDelete: Cascade)
-  users_agenda_events_updater_idTousers users?          @relation("agenda_events_updater_idTousers", fields: [updater_id], references: [id])
-}
-
-model agenda_exception_time_ranges {
-  id                                                   Int                @id @default(autoincrement())
-  start_time                                           DateTime?          @db.Timetz(6)
-  end_time                                             DateTime?          @db.Timetz(6)
-  agenda_exception_id                                  Int?
-  created_at                                           DateTime           @default(now()) @db.Timestamptz(6)
-  updated_at                                           DateTime           @db.Timestamptz(6)
-  creator_id                                           Int?
-  updater_id                                           Int?
-  base_scope_id                                        Int?               @unique
-  agenda_exceptions                                    agenda_exceptions? @relation(fields: [agenda_exception_id], references: [id], onDelete: Cascade)
-  base_scopes                                          base_scopes?       @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
-  users_agenda_exception_time_ranges_creator_idTousers users?             @relation("agenda_exception_time_ranges_creator_idTousers", fields: [creator_id], references: [id])
-  users_agenda_exception_time_ranges_updater_idTousers users?             @relation("agenda_exception_time_ranges_updater_idTousers", fields: [updater_id], references: [id])
-}
-
-model agenda_exceptions {
-  id                                        Int                            @id @default(autoincrement())
-  date                                      DateTime?                      @db.Timestamptz(6)
-  type                                      String?                        @db.VarChar(255)
-  reason                                    String?                        @db.VarChar(255)
-  agenda_id                                 Int?
-  created_at                                DateTime                       @default(now()) @db.Timestamptz(6)
-  updated_at                                DateTime                       @db.Timestamptz(6)
-  creator_id                                Int?
-  updater_id                                Int?
-  base_scope_id                             Int?                           @unique
-  agenda_exception_time_ranges              agenda_exception_time_ranges[]
-  agendas                                   agendas?                       @relation(fields: [agenda_id], references: [id], onDelete: Cascade)
-  base_scopes                               base_scopes?                   @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
-  users_agenda_exceptions_creator_idTousers users?                         @relation("agenda_exceptions_creator_idTousers", fields: [creator_id], references: [id])
-  users_agenda_exceptions_updater_idTousers users?                         @relation("agenda_exceptions_updater_idTousers", fields: [updater_id], references: [id])
-}
-
-model commission_payouts {
-  id                                         Int                         @id @default(autoincrement())
-  start_date                                 DateTime                    @db.Timestamptz(6)
-  end_date                                   DateTime                    @db.Timestamptz(6)
-  user_id                                    Int
-  commission_rule_id                         Int
-  commission_rule_snapshot                   Json?
-  performance_count                          Int
-  performance_sum                            Decimal                     @db.Decimal(15, 4)
-  matched_count_tier                         Json?
-  matched_sum_tier                           Json?
-  commission_count_total                     Decimal                     @db.Decimal(15, 4)
-  commission_sum_total                       Decimal                     @db.Decimal(15, 4)
-  base_scope_id                              Int?                        @unique
-  created_at                                 DateTime                    @default(now()) @db.Timestamptz(6)
-  updated_at                                 DateTime                    @db.Timestamptz(6)
-  creator_id                                 Int?
-  updater_id                                 Int?
-  bill_item_id                               Int?
-  offer_type                                 String?                     @db.VarChar(255)
-  status                                     String                      @default("pending")
-  base_scopes                                base_scopes?                @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
-  bill_items                                 bill_items?                 @relation(fields: [bill_item_id], references: [id])
-  commission_rules                           commission_rules            @relation(fields: [commission_rule_id], references: [id], onDelete: Cascade)
-  users_commission_payouts_creator_idTousers users?                      @relation("commission_payouts_creator_idTousers", fields: [creator_id], references: [id])
-  users_commission_payouts_updater_idTousers users?                      @relation("commission_payouts_updater_idTousers", fields: [updater_id], references: [id])
-  users_commission_payouts_user_idTousers    users                       @relation("commission_payouts_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade)
-  invoice_items_sales_users                  invoice_items_sales_users[]
-}
-
-model commission_roles {
-  id                                               Int                @id @default(autoincrement())
-  name_en                                          String?            @db.VarChar(255)
-  name_ar                                          String?            @db.VarChar(255)
-  description                                      String?
-  base_scope_id                                    Int?               @unique
-  created_at                                       DateTime           @default(now()) @db.Timestamptz(6)
-  updated_at                                       DateTime           @db.Timestamptz(6)
-  creator_id                                       Int?
-  updater_id                                       Int?
-  base_scopes                                      base_scopes?       @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
-  users_commission_roles_creator_idTousers         users?             @relation("commission_roles_creator_idTousers", fields: [creator_id], references: [id])
-  users_commission_roles_updater_idTousers         users?             @relation("commission_roles_updater_idTousers", fields: [updater_id], references: [id])
-  commission_rules                                 commission_rules[]
-  users_users_commission_role_idTocommission_roles users[]            @relation("users_commission_role_idTocommission_roles")
-}
-
-model commission_rule_items {
-  rule_id          Int
-  item_id          Int
-  item_type        String
-  commission_rules commission_rules @relation(fields: [rule_id], references: [id], onDelete: Cascade)
-
-  @@id([rule_id, item_id, item_type])
-}
-
-model commission_rule_matched_items {
-  rule_id          Int
-  item_id          Int
-  item_type        String
-  commission_rules commission_rules @relation(fields: [rule_id], references: [id], onDelete: Cascade)
-
-  @@id([rule_id, item_id, item_type])
-}
-
-model commission_rule_tiers {
-  id                                                                           Int               @id @default(autoincrement())
-  name_ar                                                                      String?
-  name_en                                                                      String?
-  commission_value_type                                                        String?
-  commission_value                                                             Float?
-  threshold_value_type                                                         String?
-  threshold_value                                                              Float?
-  total_count_rule_id                                                          Int?
-  total_sum_rule_id                                                            Int?
-  base_scope_id                                                                Int?              @unique
-  created_at                                                                   DateTime          @default(now()) @db.Timestamptz(6)
-  updated_at                                                                   DateTime          @db.Timestamptz(6)
-  creator_id                                                                   Int?
-  updater_id                                                                   Int?
-  base_scopes                                                                  base_scopes?      @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
-  users_commission_rule_tiers_creator_idTousers                                users?            @relation("commission_rule_tiers_creator_idTousers", fields: [creator_id], references: [id])
-  commission_rules_commission_rule_tiers_total_count_rule_idTocommission_rules commission_rules? @relation("commission_rule_tiers_total_count_rule_idTocommission_rules", fields: [total_count_rule_id], references: [id], onDelete: Cascade)
-  commission_rules_commission_rule_tiers_total_sum_rule_idTocommission_rules   commission_rules? @relation("commission_rule_tiers_total_sum_rule_idTocommission_rules", fields: [total_sum_rule_id], references: [id], onDelete: Cascade)
-  users_commission_rule_tiers_updater_idTousers                                users?            @relation("commission_rule_tiers_updater_idTousers", fields: [updater_id], references: [id])
-}
-
-model commission_rules {
-  id                                                                                Int                             @id @default(autoincrement())
-  commission_role_id                                                                Int?
-  contractor_id                                                                     Int?
-  category_id                                                                       Int?
-  base_scope_id                                                                     Int?                            @unique
-  created_at                                                                        DateTime                        @default(now()) @db.Timestamptz(6)
-  updated_at                                                                        DateTime                        @db.Timestamptz(6)
-  creator_id                                                                        Int?
-  updater_id                                                                        Int?
-  region_id                                                                         Int?
-  description                                                                       String?
-  name_ar                                                                           String?
-  name_en                                                                           String?
-  contract_id                                                                       Int?
-  total_count_period_unit                                                           String?
-  total_count_period_value                                                          Int?
-  total_count_tier_base                                                             Int?
-  total_sum_period_unit                                                             String?
-  total_sum_period_value                                                            Int?
-  total_sum_tier_base                                                               Int?
-  condition_beneficiary_id                                                          Int?
-  contract_condition_id                                                             Int?
-  offer_type                                                                        String?                         @db.VarChar(255)
-  commission_payouts                                                                commission_payouts[]
-  commission_rule_items                                                             commission_rule_items[]
-  commission_rule_matched_items                                                     commission_rule_matched_items[]
-  commission_rule_tiers_commission_rule_tiers_total_count_rule_idTocommission_rules commission_rule_tiers[]         @relation("commission_rule_tiers_total_count_rule_idTocommission_rules")
-  commission_rule_tiers_commission_rule_tiers_total_sum_rule_idTocommission_rules   commission_rule_tiers[]         @relation("commission_rule_tiers_total_sum_rule_idTocommission_rules")
-  base_scopes                                                                       base_scopes?                    @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
-  categories                                                                        categories?                     @relation(fields: [category_id], references: [id])
-  commission_roles                                                                  commission_roles?               @relation(fields: [commission_role_id], references: [id])
-  conditions_beneficiaries                                                          conditions_beneficiaries?       @relation(fields: [condition_beneficiary_id], references: [id])
-  contract_conditions                                                               contract_conditions?            @relation(fields: [contract_condition_id], references: [id])
-  contracts                                                                         contracts?                      @relation(fields: [contract_id], references: [id])
-  contractors                                                                       contractors?                    @relation(fields: [contractor_id], references: [id])
-  users_commission_rules_creator_idTousers                                          users?                          @relation("commission_rules_creator_idTousers", fields: [creator_id], references: [id])
-  regions                                                                           regions?                        @relation(fields: [region_id], references: [id])
-  users_commission_rules_updater_idTousers                                          users?                          @relation("commission_rules_updater_idTousers", fields: [updater_id], references: [id])
-  invoice_items_sales_users                                                         invoice_items_sales_users[]
-}
-
-model dynamic_column_values {
-  id                                            Int                  @id @default(autoincrement())
-  value                                         Json?
-  dynamic_column_id                             Int
-  patient_id                                    Int?
-  patient_visit_id                              Int?
-  patient_case_id                               Int?
-  procedure_id                                  Int?
-  sample_id                                     Int?
-  measurement_result_id                         Int?
-  base_scope_id                                 Int?                 @unique
-  created_at                                    DateTime             @default(now()) @db.Timestamptz(6)
-  updated_at                                    DateTime             @db.Timestamptz(6)
-  creator_id                                    Int?
-  updater_id                                    Int?
-  base_scopes                                   base_scopes?         @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
-  users_dynamic_column_values_creator_idTousers users?               @relation("dynamic_column_values_creator_idTousers", fields: [creator_id], references: [id])
-  dynamic_columns                               dynamic_columns      @relation(fields: [dynamic_column_id], references: [id], onDelete: Cascade)
-  measurement_results                           measurement_results? @relation(fields: [measurement_result_id], references: [id], onDelete: Cascade)
-  patient_cases                                 patient_cases?       @relation(fields: [patient_case_id], references: [id], onDelete: Cascade)
-  patients                                      patients?            @relation(fields: [patient_id], references: [id], onDelete: Cascade)
-  patient_visits                                patient_visits?      @relation(fields: [patient_visit_id], references: [id], onDelete: Cascade)
-  procedures                                    procedures?          @relation(fields: [procedure_id], references: [id], onDelete: Cascade)
-  samples                                       samples?             @relation(fields: [sample_id], references: [id], onDelete: Cascade)
-  users_dynamic_column_values_updater_idTousers users?               @relation("dynamic_column_values_updater_idTousers", fields: [updater_id], references: [id])
-}
-
-model dynamic_columns {
-  id                                      Int                     @id @default(autoincrement())
-  name_ar                                 String?                 @db.VarChar(255)
-  name_en                                 String?                 @db.VarChar(255)
-  short_name_ar                           String?                 @db.VarChar(255)
-  short_name_en                           String?                 @db.VarChar(255)
-  use_short_name                          Boolean?                @default(true)
-  column_type                             ColumnType?
-  is_required                             Boolean?                @default(true)
-  default_value                           String?
-  options                                 Json[]                  @default([])
-  active                                  Boolean                 @default(true)
-  base_scope_id                           Int?                    @unique
-  created_at                              DateTime                @default(now()) @db.Timestamptz(6)
-  updated_at                              DateTime                @db.Timestamptz(6)
-  creator_id                              Int?
-  updater_id                              Int?
-  dynamic_column_values                   dynamic_column_values[]
-  base_scopes                             base_scopes?            @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
-  users_dynamic_columns_creator_idTousers users?                  @relation("dynamic_columns_creator_idTousers", fields: [creator_id], references: [id])
-  users_dynamic_columns_updater_idTousers users?                  @relation("dynamic_columns_updater_idTousers", fields: [updater_id], references: [id])
-}
-
-model invoice_items_sales_users {
-  id                       Int                 @id @default(autoincrement())
-  status                   String?             @default("pending")
-  commission_rule_snapshot Json?
-  invoice_item_id          Int
-  user_id                  Int
-  commission_rule_id       Int?
-  base_scope_id            Int?                @unique
-  created_at               DateTime            @default(now()) @db.Timestamptz(6)
-  updated_at               DateTime            @db.Timestamptz(6)
-  visit_date               DateTime?           @db.Timestamptz(6)
-  commission_payout_id     Int?
-  base_scopes              base_scopes?        @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
-  commission_payouts       commission_payouts? @relation(fields: [commission_payout_id], references: [id])
-  commission_rules         commission_rules?   @relation(fields: [commission_rule_id], references: [id])
-  invoice_items            invoice_items       @relation(fields: [invoice_item_id], references: [id], onDelete: Cascade)
-  users                    users               @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  @@unique([invoice_item_id, user_id])
-}
-
-model notes {
-  id                            Int          @id @default(autoincrement())
-  note                          String?
-  screen                        String?      @db.VarChar(255)
-  request_id                    Int?
-  base_scope_id                 Int?         @unique
-  created_at                    DateTime     @default(now()) @db.Timestamptz(6)
-  updated_at                    DateTime     @db.Timestamptz(6)
-  creator_id                    Int?
-  updater_id                    Int?
-  base_scopes                   base_scopes? @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
-  users_notes_creator_idTousers users?       @relation("notes_creator_idTousers", fields: [creator_id], references: [id])
-  requests                      requests?    @relation(fields: [request_id], references: [id], onDelete: Cascade)
-  users_notes_updater_idTousers users?       @relation("notes_updater_idTousers", fields: [updater_id], references: [id])
-}
-
-model notification_rules {
-  id                                         Int                   @id @default(autoincrement())
-  action_key                                 String?               @unique
-  start_date                                 DateTime?
-  end_date                                   DateTime?
-  type                                       NotificationRuleType?
-  title                                      String?
-  description                                String?
-  is_active                                  Boolean               @default(true)
-  channels                                   NotificationChannel[]
-  created_at                                 DateTime              @default(now()) @db.Timestamptz(6)
-  updated_at                                 DateTime              @db.Timestamptz(6)
-  creator_id                                 Int?
-  updater_id                                 Int?
-  base_scope_id                              Int?                  @unique
-  base_scopes                                base_scopes?          @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
-  users_notification_rules_creator_idTousers users?                @relation("notification_rules_creator_idTousers", fields: [creator_id], references: [id])
-  users_notification_rules_updater_idTousers users?                @relation("notification_rules_updater_idTousers", fields: [updater_id], references: [id])
-  notifications                              notifications[]
-  groups                                     groups[]              @relation("GroupToNotificationRule")
-  users_UserToNotificationRule               users[]               @relation("UserToNotificationRule")
-}
-
-model notifications {
-  id                                    Int                  @id @default(autoincrement())
-  rule_id                               Int
-  user_id                               Int
-  title                                 String
-  description                           String
-  type                                  NotificationRuleType
-  is_read                               Boolean              @default(false)
-  sent_at                               DateTime             @default(now())
-  created_at                            DateTime             @default(now()) @db.Timestamptz(6)
-  updated_at                            DateTime             @db.Timestamptz(6)
-  creator_id                            Int?
-  updater_id                            Int?
-  base_scope_id                         Int?                 @unique
-  base_scopes                           base_scopes?         @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
-  users_notifications_creator_idTousers users?               @relation("notifications_creator_idTousers", fields: [creator_id], references: [id])
-  notification_rules                    notification_rules   @relation(fields: [rule_id], references: [id], onDelete: Cascade)
-  users_notifications_updater_idTousers users?               @relation("notifications_updater_idTousers", fields: [updater_id], references: [id])
-  users_notifications_user_idTousers    users                @relation("notifications_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade)
-}
-
-model phone_users {
-  id            Int          @id @default(autoincrement())
-  patient_id    Int?
-  contractor_id Int?
-  login_code    String?      @db.VarChar(255)
-  base_scope_id Int?         @unique
-  base_scopes   base_scopes? @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
-  contractors   contractors? @relation(fields: [contractor_id], references: [id])
-  patients      patients?    @relation(fields: [patient_id], references: [id])
-}
-
-model region_types {
-  id              Int            @id @default(autoincrement())
-  object_id       String?        @unique @db.VarChar(255)
-  name_ar         String?        @db.VarChar(255)
-  name_en         String?        @db.VarChar(255)
-  serial          String?        @db.VarChar(255)
-  active          Boolean?       @default(true)
-  deleted         Boolean?       @default(false)
-  created_at      DateTime?      @db.Timestamptz(6)
-  updated_at      DateTime?      @db.Timestamptz(6)
-  organization_id Int?
-  organizations   organizations? @relation(fields: [organization_id], references: [id])
-  regions         regions[]
-}
-
-model regions {
-  id               Int                @id @default(autoincrement())
-  object_id        String?            @unique @db.VarChar(255)
-  name_ar          String?            @db.VarChar(255)
-  name_en          String?            @db.VarChar(255)
-  active           Boolean?
-  deleted          Boolean?
-  created_at       DateTime?          @db.Timestamptz(6)
-  updated_at       DateTime?          @db.Timestamptz(6)
-  parent_id        Int?
-  organization_id  Int?
-  region_type_id   Int?
-  path_ar          String?            @db.VarChar(255)
-  path_en          String?            @db.VarChar(255)
-  base_scopes      base_scopes[]
-  commission_rules commission_rules[]
-  contractors      contractors[]
-  organizations    organizations?     @relation(fields: [organization_id], references: [id])
-  regions          regions?           @relation("regionsToregions", fields: [parent_id], references: [id])
-  other_regions    regions[]          @relation("regionsToregions")
-  region_types     region_types?      @relation(fields: [region_type_id], references: [id])
 }
 
 enum ColumnType {

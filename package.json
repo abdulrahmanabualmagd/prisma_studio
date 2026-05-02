@@ -3,7 +3,22 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "npx prisma db pull && npx prisma studio"
+    "init:schemas": "node scripts/init-schemas.js",
+    "pull:local:lims": "npm run init:schemas && set DB_TYPE=LOCAL_LIMS&& npx prisma db pull",
+    "pull:remote:lims": "npm run init:schemas && set DB_TYPE=REMOTE_LIMS&& npx prisma db pull",
+    "pull:remote:wallet": "npm run init:schemas && set DB_TYPE=REMOTE_WALLET&& npx prisma db pull",
+    "pull:local:muzn": "npm run init:schemas && set DB_TYPE=LOCAL_MUZN&& npx prisma db pull",
+    "pull:remote:pt": "npm run init:schemas && set DB_TYPE=REMOTE_PT&& npx prisma db pull",
+    "pull:remote:inventory": "npm run init:schemas && set DB_TYPE=REMOTE_INVENTORY&& npx prisma db pull",
+    "local:lims": "npm run init:schemas && set DB_TYPE=LOCAL_LIMS&& npx prisma studio",
+    "remote:lims": "npm run init:schemas && set DB_TYPE=REMOTE_LIMS&& npx prisma studio",
+    "remote:wallet": "npm run init:schemas && set DB_TYPE=REMOTE_WALLET&& npx prisma studio",
+    "local:muzn": "npm run init:schemas && set DB_TYPE=LOCAL_MUZN&& npx prisma studio",
+    "remote:pt": "npm run init:schemas && set DB_TYPE=REMOTE_PT&& npx prisma studio",
+    "remote:inventory": "npm run init:schemas && set DB_TYPE=REMOTE_INVENTORY&& npx prisma studio",
+    "dev": "npm run studio:local:lims"
+
+
   },
   "keywords": [],
   "author": "",
