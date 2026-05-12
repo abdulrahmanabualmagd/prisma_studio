@@ -832,6 +832,7 @@ model companies {
   deleted                 Boolean?
   headquarter_address_ar  String?                   @db.VarChar(255)
   headquarter_address_en  String?                   @db.VarChar(255)
+  website                 String?
   base_scopes             base_scopes[]
   organizations           organizations?            @relation(fields: [organization_id], references: [id])
   departments             departments[]
@@ -1014,6 +1015,7 @@ model contractors {
   patient_visits_patient_visits_transferred_by_idTocontractors   patient_visits[]        @relation("patient_visits_transferred_by_idTocontractors")
   patient_visits_patient_visits_transferred_from_idTocontractors patient_visits[]        @relation("patient_visits_transferred_from_idTocontractors")
   phone_users                                                    phone_users[]
+  users_users_contractor_idTocontractors                         users[]                 @relation("users_contractor_idTocontractors")
   contracts                                                      contracts[]             @relation("ContractToContractor")
   contractor_categories                                          contractor_categories[] @relation("ContractorCategoriesToContractors")
   users_UserToContractor                                         users[]                 @relation("UserToContractor")
@@ -1491,6 +1493,7 @@ model invoice_payments {
   individual_bill_id                                        Int?
   contractor_id                                             Int?
   patient_id                                                Int?
+  code                                                      String?
   base_scopes                                               base_scopes?             @relation(fields: [base_scope_id], references: [id])
   bills_invoice_payments_contractor_bill_idTobills          bills?                   @relation("invoice_payments_contractor_bill_idTobills", fields: [contractor_bill_id], references: [id], onDelete: Cascade)
   contractors                                               contractors?             @relation(fields: [contractor_id], references: [id])
@@ -1684,7 +1687,7 @@ model notes {
 
 model notification_rules {
   id                                         Int                   @id @default(autoincrement())
-  action_key                                 String?               @unique
+  action_key                                 String?
   start_date                                 DateTime?
   end_date                                   DateTime?
   type                                       NotificationRuleType?
@@ -1697,18 +1700,25 @@ model notification_rules {
   creator_id                                 Int?
   updater_id                                 Int?
   base_scope_id                              Int?                  @unique
+  phone_description                          String?
+  phone_title                                String?
+  send_data_owners                           Boolean               @default(false)
+  send_phone_users                           Boolean               @default(false)
+  screen                                     String?
   base_scopes                                base_scopes?          @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
   users_notification_rules_creator_idTousers users?                @relation("notification_rules_creator_idTousers", fields: [creator_id], references: [id])
   users_notification_rules_updater_idTousers users?                @relation("notification_rules_updater_idTousers", fields: [updater_id], references: [id])
   notifications                              notifications[]
   groups                                     groups[]              @relation("GroupToNotificationRule")
   users_UserToNotificationRule               users[]               @relation("UserToNotificationRule")
+
+  @@unique([action_key, screen])
 }
 
 model notifications {
   id                                    Int                  @id @default(autoincrement())
   rule_id                               Int
-  user_id                               Int
+  user_id                               Int?
   title                                 String
   description                           String
   type                                  NotificationRuleType
@@ -1719,11 +1729,13 @@ model notifications {
   creator_id                            Int?
   updater_id                            Int?
   base_scope_id                         Int?                 @unique
+  phone_user_id                         Int?
   base_scopes                           base_scopes?         @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
   users_notifications_creator_idTousers users?               @relation("notifications_creator_idTousers", fields: [creator_id], references: [id])
+  phone_users                           phone_users?         @relation(fields: [phone_user_id], references: [id], onDelete: Cascade)
   notification_rules                    notification_rules   @relation(fields: [rule_id], references: [id], onDelete: Cascade)
   users_notifications_updater_idTousers users?               @relation("notifications_updater_idTousers", fields: [updater_id], references: [id])
-  users_notifications_user_idTousers    users                @relation("notifications_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade)
+  users_notifications_user_idTousers    users?               @relation("notifications_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 model organisms {
@@ -1900,7 +1912,7 @@ model patient_visits {
   condition_beneficiary_id                                    Int?
   contract_id                                                 Int?
   contractor_id                                               Int?
-  hasContract                                                 Boolean                   @default(false)
+  hasContract                                                 Boolean?                  @default(false)
   type                                                        String?                   @default("patient") @db.VarChar(255)
   contractor_batch_id                                         Int?
   transferred_by_id                                           Int?
@@ -1968,14 +1980,16 @@ model patients {
 }
 
 model phone_users {
-  id            Int          @id @default(autoincrement())
+  id            Int             @id @default(autoincrement())
   patient_id    Int?
   contractor_id Int?
-  login_code    String?      @db.VarChar(255)
-  base_scope_id Int?         @unique
-  base_scopes   base_scopes? @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
-  contractors   contractors? @relation(fields: [contractor_id], references: [id])
-  patients      patients?    @relation(fields: [patient_id], references: [id])
+  login_code    String?         @db.VarChar(255)
+  base_scope_id Int?            @unique
+  fcm_tokens    String[]
+  notifications notifications[]
+  base_scopes   base_scopes?    @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
+  contractors   contractors?    @relation(fields: [contractor_id], references: [id])
+  patients      patients?       @relation(fields: [patient_id], references: [id])
 }
 
 model price_logs {
@@ -2822,6 +2836,7 @@ model users {
   commission_role_id                                                                Int?
   nickname                                                                          String?                           @db.VarChar(255)
   FCMTokens                                                                         String[]
+  contractor_id                                                                     Int?
   age_operators_age_operators_creator_idTousers                                     age_operators[]                   @relation("age_operators_creator_idTousers")
   age_operators_age_operators_updater_idTousers                                     age_operators[]                   @relation("age_operators_updater_idTousers")
   agenda_events_agenda_events_creator_idTousers                                     agenda_events[]                   @relation("agenda_events_creator_idTousers")
@@ -3025,6 +3040,7 @@ model users {
   units_units_updater_idTousers                                                     units[]                           @relation("units_updater_idTousers")
   commission_roles_users_commission_role_idTocommission_roles                       commission_roles?                 @relation("users_commission_role_idTocommission_roles", fields: [commission_role_id], references: [id])
   companies                                                                         companies?                        @relation(fields: [company_id], references: [id])
+  contractors_users_contractor_idTocontractors                                      contractors?                      @relation("users_contractor_idTocontractors", fields: [contractor_id], references: [id])
   departments                                                                       departments?                      @relation(fields: [department_id], references: [id])
   organizations                                                                     organizations?                    @relation(fields: [organization_id], references: [id])
   workflows_workflows_creator_idTousers                                             workflows[]                       @relation("workflows_creator_idTousers")
