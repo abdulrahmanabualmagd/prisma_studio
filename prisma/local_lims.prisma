@@ -166,7 +166,6 @@ model aggregate_results {
   attachments                                                                           attachments[]
   comment_entries                                                                       comment_entries[]
   status_states                                                                         status_states[]
-  companies                                                                             companies[]         @relation("AssignAggregateResultsToCompanies")
 }
 
 model analyte_grouping_titles {
@@ -342,6 +341,7 @@ model base_scopes {
   agenda_working_days             agenda_working_days?
   agendas                         agendas?
   aggregate_results               aggregate_results?
+  alert_rules                     alert_rules?
   analyte_grouping_titles         analyte_grouping_titles?
   antibiotic_families             antibiotic_families?
   antibiotic_family_groups        antibiotic_family_groups?
@@ -555,6 +555,7 @@ model bills {
   users_bills_updater_idTousers                               users?             @relation("bills_updater_idTousers", fields: [updater_id], references: [id])
   invoice_payments_invoice_payments_contractor_bill_idTobills invoice_payments[] @relation("invoice_payments_contractor_bill_idTobills")
   invoice_payments_invoice_payments_individual_bill_idTobills invoice_payments[] @relation("invoice_payments_individual_bill_idTobills")
+  companies                                                   companies[]        @relation("AssignBillsToCompanies")
 }
 
 model categories {
@@ -820,29 +821,30 @@ model commission_rules {
 }
 
 model companies {
-  id                      Int                       @id @default(autoincrement())
-  object_id               String?                   @unique @db.VarChar(255)
-  organization_id         Int?
-  name_ar                 String?                   @db.VarChar(255)
-  name_en                 String?                   @db.VarChar(255)
-  serial                  String?
-  active                  Boolean?
-  created_at              DateTime?                 @db.Timestamptz(6)
-  updated_at              DateTime?                 @db.Timestamptz(6)
-  deleted                 Boolean?
-  headquarter_address_ar  String?                   @db.VarChar(255)
-  headquarter_address_en  String?                   @db.VarChar(255)
-  website                 String?
-  base_scopes             base_scopes[]
-  organizations           organizations?            @relation(fields: [organization_id], references: [id])
-  departments             departments[]
-  users                   users[]
-  aggregate_results       aggregate_results[]       @relation("AssignAggregateResultsToCompanies")
-  measurement_result_logs measurement_result_logs[] @relation("AssignMeasurementResultLogsToCompanies")
-  measurement_results     measurement_results[]     @relation("AssignMeasurementResultsToCompanies")
-  patient_visits          patient_visits[]          @relation("AssignPatientVisitsToCompanies")
-  request_procedures      request_procedures[]      @relation("AssignRequestProceduresToCompanies")
-  request_samples         request_samples[]         @relation("AssignRequestSamplesToCompanies")
+  id                     Int                  @id @default(autoincrement())
+  object_id              String?              @unique @db.VarChar(255)
+  organization_id        Int?
+  name_ar                String?              @db.VarChar(255)
+  name_en                String?              @db.VarChar(255)
+  serial                 String?
+  active                 Boolean?
+  created_at             DateTime?            @db.Timestamptz(6)
+  updated_at             DateTime?            @db.Timestamptz(6)
+  deleted                Boolean?
+  headquarter_address_ar String?              @db.VarChar(255)
+  headquarter_address_en String?              @db.VarChar(255)
+  website                String?
+  phonenumber            String?
+  base_scopes            base_scopes[]
+  organizations          organizations?       @relation(fields: [organization_id], references: [id])
+  departments            departments[]
+  users                  users[]
+  bills                  bills[]              @relation("AssignBillsToCompanies")
+  invoices               invoices[]           @relation("AssignInvoicesToCompanies")
+  patient_visits         patient_visits[]     @relation("AssignPatientVisitsToCompanies")
+  request_procedures     request_procedures[] @relation("AssignRequestProceduresToCompanies")
+  request_samples        request_samples[]    @relation("AssignRequestSamplesToCompanies")
+  contractors            contractors[]        @relation("ContractorCompanies")
 }
 
 model conditions_beneficiaries {
@@ -1018,6 +1020,7 @@ model contractors {
   users_users_contractor_idTocontractors                         users[]                 @relation("users_contractor_idTocontractors")
   contracts                                                      contracts[]             @relation("ContractToContractor")
   contractor_categories                                          contractor_categories[] @relation("ContractorCategoriesToContractors")
+  companies                                                      companies[]             @relation("ContractorCompanies")
   users_UserToContractor                                         users[]                 @relation("UserToContractor")
 }
 
@@ -1284,6 +1287,7 @@ model groups {
   organization_id    Int?
   base_scopes        base_scopes[]
   organizations      organizations?       @relation(fields: [organization_id], references: [id])
+  alert_rules        alert_rules[]        @relation("GroupToAlertRule")
   notification_rules notification_rules[] @relation("GroupToNotificationRule")
   users              users[]              @relation("GroupUsers")
   test_profiles      test_profiles[]      @relation("TestProfileGroups")
@@ -1579,6 +1583,7 @@ model invoices {
   users_invoices_creator_idTousers                                  users?                @relation("invoices_creator_idTousers", fields: [creator_id], references: [id])
   patient_visits                                                    patient_visits?       @relation(fields: [patient_visit_id], references: [id])
   users_invoices_updater_idTousers                                  users?                @relation("invoices_updater_idTousers", fields: [updater_id], references: [id])
+  companies                                                         companies[]           @relation("AssignInvoicesToCompanies")
 }
 
 model manufacturers {
@@ -1629,7 +1634,6 @@ model measurement_result_logs {
   measurement_results                             measurement_results? @relation(fields: [measurement_result_id], references: [id], onDelete: Cascade)
   units                                           units?               @relation(fields: [unit_id], references: [id])
   users_measurement_result_logs_updater_idTousers users?               @relation("measurement_result_logs_updater_idTousers", fields: [updater_id], references: [id])
-  companies                                       companies[]          @relation("AssignMeasurementResultLogsToCompanies")
 }
 
 model measurement_results {
@@ -1666,7 +1670,6 @@ model measurement_results {
   units                                                                                   units?                       @relation(fields: [unit_id], references: [id])
   users_measurement_results_updater_idTousers                                             users?                       @relation("measurement_results_updater_idTousers", fields: [updater_id], references: [id])
   sensitivity_test_organisms                                                              sensitivity_test_organisms[]
-  companies                                                                               companies[]                  @relation("AssignMeasurementResultsToCompanies")
 }
 
 model notes {
@@ -2853,6 +2856,8 @@ model users {
   agendas_agendas_updater_idTousers                                                 agendas[]                         @relation("agendas_updater_idTousers")
   aggregate_results_aggregate_results_creator_idTousers                             aggregate_results[]               @relation("aggregate_results_creator_idTousers")
   aggregate_results_aggregate_results_updater_idTousers                             aggregate_results[]               @relation("aggregate_results_updater_idTousers")
+  alert_rules_alert_rules_creator_idTousers                                         alert_rules[]                     @relation("alert_rules_creator_idTousers")
+  alert_rules_alert_rules_updater_idTousers                                         alert_rules[]                     @relation("alert_rules_updater_idTousers")
   analyte_grouping_titles_analyte_grouping_titles_creator_idTousers                 analyte_grouping_titles[]         @relation("analyte_grouping_titles_creator_idTousers")
   analyte_grouping_titles_analyte_grouping_titles_updater_idTousers                 analyte_grouping_titles[]         @relation("analyte_grouping_titles_updater_idTousers")
   antibiotic_families_antibiotic_families_creator_idTousers                         antibiotic_families[]             @relation("antibiotic_families_creator_idTousers")
@@ -3048,6 +3053,7 @@ model users {
   groups                                                                            groups[]                          @relation("GroupUsers")
   patient_visits_SalesUserToPatientVisits                                           patient_visits[]                  @relation("SalesUserToPatientVisits")
   test_profiles_TestProfileUsers                                                    test_profiles[]                   @relation("TestProfileUsers")
+  alert_rules_UserToAlertRule                                                       alert_rules[]                     @relation("UserToAlertRule")
   contractors_UserToContractor                                                      contractors[]                     @relation("UserToContractor")
   notification_rules_UserToNotificationRule                                         notification_rules[]              @relation("UserToNotificationRule")
 }
@@ -3071,6 +3077,29 @@ model workflows {
   base_scopes                       base_scopes?         @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
   users_workflows_creator_idTousers users?               @relation("workflows_creator_idTousers", fields: [creator_id], references: [id])
   users_workflows_updater_idTousers users?               @relation("workflows_updater_idTousers", fields: [updater_id], references: [id])
+}
+
+model alert_rules {
+  id                                  Int          @id @default(autoincrement())
+  action_key                          String?
+  screen                              String?
+  start_date                          DateTime?
+  end_date                            DateTime?
+  title                               String?
+  description                         String?
+  is_active                           Boolean      @default(true)
+  save_me                             Boolean      @default(false)
+  condition                           Json?
+  created_at                          DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at                          DateTime     @db.Timestamptz(6)
+  creator_id                          Int?
+  updater_id                          Int?
+  base_scope_id                       Int?         @unique
+  base_scopes                         base_scopes? @relation(fields: [base_scope_id], references: [id], onDelete: Cascade)
+  users_alert_rules_creator_idTousers users?       @relation("alert_rules_creator_idTousers", fields: [creator_id], references: [id])
+  users_alert_rules_updater_idTousers users?       @relation("alert_rules_updater_idTousers", fields: [updater_id], references: [id])
+  groups                              groups[]     @relation("GroupToAlertRule")
+  users_UserToAlertRule               users[]      @relation("UserToAlertRule")
 }
 
 enum ColumnType {

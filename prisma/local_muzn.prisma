@@ -104,7 +104,7 @@ model invoices {
   updated_at      DateTime       @db.Timestamptz(6)
   paid_at         DateTime?      @db.Timestamptz(6)
   subscription_id String?
-  subscriptions   subscriptions? @relation(fields: [subscription_id], references: [id])
+  subscriptions   subscriptions? @relation(fields: [subscription_id], references: [id], onDelete: Restrict)
   payments        payments[]
   status_logs     status_logs[]
 
@@ -158,18 +158,20 @@ model parents {
 }
 
 model payments {
-  id             String          @id
-  amount         Decimal         @db.Decimal(10, 2)
-  currency       String          @default("USD") @db.VarChar(3)
-  gateway        payment_gateway
-  gateway_txn_id String?         @unique
-  status         payment_status  @default(pending)
-  paid_at        DateTime?       @db.Timestamptz(6)
-  created_at     DateTime        @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime        @db.Timestamptz(6)
-  invoice_id     String
-  invoices       invoices        @relation(fields: [invoice_id], references: [id])
-  status_logs    status_logs[]
+  id                String           @id
+  currency          String           @default("USD") @db.VarChar(3)
+  status            payment_status   @default(pending)
+  paid_at           DateTime?        @db.Timestamptz(6)
+  created_at        DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime         @db.Timestamptz(6)
+  invoice_id        String
+  credit            Decimal          @default(0) @db.Decimal(10, 2)
+  debit             Decimal          @default(0) @db.Decimal(10, 2)
+  payment_method_id String?
+  source            payment_source   @default(pay)
+  invoices          invoices         @relation(fields: [invoice_id], references: [id])
+  payment_methods   payment_methods? @relation(fields: [payment_method_id], references: [id], onDelete: Restrict)
+  status_logs       status_logs[]
 }
 
 model permissions {
@@ -195,8 +197,8 @@ model pricings {
   created_at         DateTime           @default(now()) @db.Timestamptz(6)
   updated_at         DateTime           @db.Timestamptz(6)
   course_id          String
-  country            String             @db.VarChar(2)
-  courses            courses            @relation(fields: [course_id], references: [id])
+  country            String?            @db.VarChar(2)
+  courses            courses            @relation(fields: [course_id], references: [id], onDelete: Cascade)
   subscriptions      subscriptions[]
   wages              wages[]
 
@@ -350,14 +352,19 @@ model subscriptions {
   course_id                String
   pricing_id               String?
   parent_id                String?
+  grace_minutes            Int                 @default(0)
+  grace_period_days        Int                 @default(0)
+  rollover_minutes         Int                 @default(0)
+  expiration_behavior      expiration_behavior @default(hard_stop)
+  rollover_policy          rollover_policy     @default(none)
   invoices                 invoices[]
   schedules                schedules[]
   sessions                 sessions[]
   status_logs              status_logs[]
-  courses                  courses             @relation(fields: [course_id], references: [id], onDelete: Cascade)
-  parents                  parents?            @relation(fields: [parent_id], references: [id])
-  pricings                 pricings?           @relation(fields: [pricing_id], references: [id])
-  students                 students            @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  courses                  courses             @relation(fields: [course_id], references: [id])
+  parents                  parents?            @relation(fields: [parent_id], references: [id], onDelete: Restrict)
+  pricings                 pricings?           @relation(fields: [pricing_id], references: [id], onDelete: Restrict)
+  students                 students            @relation(fields: [student_id], references: [id])
 
   @@index([parent_id, student_id, course_id, status])
 }
@@ -575,10 +582,28 @@ model wages {
   created_at    DateTime      @default(now()) @db.Timestamptz(6)
   updated_at    DateTime      @db.Timestamptz(6)
   pricing_id    String
+  currency      String        @default("EGP") @db.VarChar(3)
   schedules     schedules[]
-  pricings      pricings      @relation(fields: [pricing_id], references: [id])
+  pricings      pricings      @relation(fields: [pricing_id], references: [id], onDelete: Cascade)
 
   @@unique([teacher_level, pricing_id])
+}
+
+model payment_methods {
+  id                  String     @id
+  type                String
+  provider            String?
+  last_four           String?    @db.VarChar(4)
+  expiry_month        Int?
+  expiry_year         Int?
+  gateway_customer_id String?
+  gateway_token       String?
+  is_default          Boolean    @default(false)
+  metadata            Json?
+  created_at          DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime   @db.Timestamptz(6)
+  deleted_at          DateTime?  @db.Timestamptz(6)
+  payments            payments[]
 }
 
 enum AccessEffect {
@@ -642,6 +667,9 @@ enum invoice_status {
   overdue
   suspended
   cancelled
+  draft
+  partially_paid
+  refunded
 }
 
 enum letters_skill {
@@ -738,6 +766,7 @@ enum subscription_status {
   suspended
   expired
   cancelled
+  in_grace
 }
 
 enum tajweed_skill {
@@ -804,4 +833,23 @@ enum user_status {
   deactivated
   suspended
   deleted
+}
+
+enum expiration_behavior {
+  hard_stop
+  grace_period
+  soft_downgrade
+}
+
+enum payment_source {
+  invoice
+  pay
+}
+
+enum rollover_policy {
+  unlimited
+  capped
+  use_it_or_lose_it
+  top_up
+  none
 }
